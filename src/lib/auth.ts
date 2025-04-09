@@ -15,13 +15,29 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async session({ session, token }) {
       if (token) {
-        session.user.id = token.sub as string;
+        // 기본 ID 필드 설정
+        session.user.id = token.id as string || token.sub as string;
+        
+        // 추가 사용자 정보 세션에 복사
+        session.user.role = token.role as "user" | "expert" | "admin" | null;
+        session.user.nickname = token.nickname as string | null;
+        session.user.provider = token.provider as "google" | "kakao" | "email" | null;
+        session.user.createdAt = token.createdAt as string | null;
+        session.user.updatedAt = token.updatedAt as string | null;
+        session.user.status = token.status as "active" | "banned" | null;
       }
       return session;
     },
     async jwt({ token, user }) {
       if (user) {
-        token.sub = user.id;
+        // DB에서 가져온 user 객체의 데이터를 token에 복사
+        token.id = user.id;
+        token.role = user.role;
+        token.nickname = user.nickname;
+        token.provider = user.provider;
+        token.createdAt = user.createdAt;
+        token.updatedAt = user.updatedAt;
+        token.status = user.status;
       }
       return token;
     },
@@ -32,14 +48,4 @@ export const authOptions: NextAuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-// 타입 확장
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    };
-  }
-}
+// types/next-auth.d.ts에 타입을 정의했으므로 여기서는 제거
