@@ -1,40 +1,41 @@
 "use client"
 
-import { useSession, signOut } from "next-auth/react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
+import { signOut, useSession } from "next-auth/react"
+import { LogOut } from "lucide-react"
 
 export default function AuthButtons() {
   const { data: session } = useSession()
 
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/" })
+  }
+
   if (session) {
     return (
-      <Button
-        variant="outline"
-        onClick={() => signOut({ callbackUrl: "/" })}
-        className="text-neutral-content hover:text-accent border-primary hover:bg-primary/10 transition-colors"
+      <button
+        onClick={handleLogout}
+        className="flex items-center gap-1 px-4 py-2 rounded-md bg-primary hover:bg-secondary text-neutral-content transition-colors"
       >
+        <LogOut size={16} />
         로그아웃
-      </Button>
+      </button>
     )
   }
 
   return (
     <div className="flex items-center space-x-2">
-      <Link href="/login">
-        <Button
-          variant="outline"
-          className="text-neutral-content hover:text-accent border-primary hover:bg-primary/10 transition-colors"
-        >
-          로그인
-        </Button>
+      <Link 
+        href="/login"
+        className="px-4 py-2 rounded-md bg-primary hover:bg-secondary text-neutral-content transition-colors"
+      >
+        로그인
       </Link>
-      <Link href="/register">
-        <Button
-          className="bg-primary hover:bg-secondary text-neutral-content transition-colors"
-        >
-          회원가입
-        </Button>
+      <Link 
+        href="/register"
+        className="px-4 py-2 rounded-md border border-primary hover:bg-neutral text-neutral-content transition-colors"
+      >
+        회원가입
       </Link>
     </div>
   )
