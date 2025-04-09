@@ -1,6 +1,2 @@
-import NextAuth from "next-auth";
-import { authOptions } from "@/lib/auth";
-
-const handler = NextAuth(authOptions);
-
-export { handler as GET, handler as POST };
+// NextAuth 핸들러를 직접 가져와서 내보냅니다
+export { GET, POST } from "@/lib/auth";

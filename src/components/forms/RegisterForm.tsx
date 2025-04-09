@@ -6,7 +6,7 @@ import { z } from 'zod'
 
 // 회원가입 유효성 검사를 위한 스키마
 const registerSchema = z.object({
-  name: z.string().min(2, '이름은 2자 이상이어야 합니다.'),
+  nickname: z.string().min(2, '이름은 2자 이상이어야 합니다.').max(20, '이름은 20자 이하여야 합니다.'),
   email: z.string().email('유효한 이메일 주소를 입력해 주세요.'),
   password: z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다.'),
   confirmPassword: z.string(),
@@ -21,7 +21,7 @@ const registerSchema = z.object({
 export default function RegisterForm() {
   const router = useRouter()
   const [formData, setFormData] = useState({
-    name: '',
+    nickname: '',
     email: '',
     password: '',
     confirmPassword: '',
@@ -52,20 +52,22 @@ export default function RegisterForm() {
       
       setIsLoading(true)
       
-      // 회원가입 API 호출
+      // 회원가입 API 호출 - nickname 필드 올바르게 전송
       const response = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          name: formData.name,
+          nickname: formData.nickname, // 닉네임 필드
           email: formData.email,
           password: formData.password,
         }),
       })
 
+      // 응답 처리
       const data = await response.json()
+      console.log('회원가입 응답:', data) // 디버깅용 로그
 
       if (!response.ok) {
         throw new Error(data.message || '회원가입 중 오류가 발생했습니다.')
@@ -87,6 +89,8 @@ export default function RegisterForm() {
       } else {
         setRegisterError('회원가입 중 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.')
       }
+      console.error('회원가입 오류:', error)
+    } finally {
       setIsLoading(false)
     }
   }
@@ -94,22 +98,22 @@ export default function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="name" className="block text-sm font-medium text-neutral-content">
-          이름
+        <label htmlFor="nickname" className="block text-sm font-medium text-neutral-content">
+          닉네임
         </label>
         <input
-          id="name"
-          name="name"
+          id="nickname"
+          name="nickname"
           type="text"
           required
-          value={formData.name}
+          value={formData.nickname}
           onChange={handleChange}
           className={`mt-1 block w-full rounded-md border ${
-            errors.name ? 'border-red-500' : 'border-border'
+            errors.nickname ? 'border-red-500' : 'border-border'
           } px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary`}
-          placeholder="이름을 입력하세요"
+          placeholder="닉네임을 입력하세요 (2-20자)"
         />
-        {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
+        {errors.nickname && <p className="mt-1 text-xs text-red-500">{errors.nickname}</p>}
       </div>
 
       <div>
