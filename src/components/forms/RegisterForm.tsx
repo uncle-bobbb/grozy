@@ -3,6 +3,9 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { z } from 'zod'
+import { signIn } from "next-auth/react";
+import { KakaoIcon } from "../icons/KakaoIcon";
+import GoogleIcon from "@/components/icons/GoogleIcon";
 
 // 회원가입 유효성 검사를 위한 스키마
 const registerSchema = z.object({
@@ -94,6 +97,19 @@ export default function RegisterForm() {
       setIsLoading(false)
     }
   }
+
+  // 카카오 로그인 처리 함수 추가
+  const handleKakaoSignIn = async () => {
+    setIsLoading(true);
+    try {
+      await signIn("kakao", { callbackUrl: "/" });
+    } catch (error) {
+      console.error("카카오 로그인 오류:", error);
+      setRegisterError("카카오 로그인 중 오류가 발생했습니다.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -225,14 +241,32 @@ export default function RegisterForm() {
         <button
           type="button"
           className="flex items-center justify-center rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-neutral-content shadow-sm hover:bg-neutral"
+          onClick={() => signIn("google", { callbackUrl: "/" })}
+          disabled={isLoading}
         >
-          구글로 가입하기
+          {isLoading ? (
+            "처리 중..."
+          ) : (
+            <>
+              <GoogleIcon className="mr-2 h-4 w-4" />
+              구글로 가입하기
+            </>
+          )}
         </button>
         <button
           type="button"
-          className="flex items-center justify-center rounded-md border border-border bg-white px-4 py-2 text-sm font-medium text-neutral-content shadow-sm hover:bg-neutral"
+          className="flex items-center justify-center rounded-md border border-[#FEE500] bg-[#FEE500] px-4 py-2 text-sm font-medium text-[#000000] shadow-sm hover:bg-[#FFDD00]"
+          onClick={handleKakaoSignIn}
+          disabled={isLoading}
         >
-          카카오로 가입하기
+          {isLoading ? (
+            "처리 중..."
+          ) : (
+            <>
+              <KakaoIcon className="mr-2 h-4 w-4" />
+              카카오로 가입하기
+            </>
+          )}
         </button>
       </div>
     </form>

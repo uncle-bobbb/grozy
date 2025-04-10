@@ -7,6 +7,25 @@ BEGIN
   END IF;
 END $$;
 
+-- 칼럼과 커뮤니티 게시글의 ID를 참조하기 위한 함수 생성
+CREATE OR REPLACE FUNCTION check_post_reference() 
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.post_type = 'column' THEN
+    PERFORM 1 FROM columns WHERE id = NEW.post_id;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'post_id는 존재하는 칼럼 ID여야 합니다';
+    END IF;
+  ELSIF NEW.post_type = 'community' THEN
+    PERFORM 1 FROM community_posts WHERE id = NEW.post_id;
+    IF NOT FOUND THEN
+      RAISE EXCEPTION 'post_id는 존재하는 커뮤니티 게시글 ID여야 합니다';
+    END IF;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 CREATE TABLE IF NOT EXISTS comments (
   id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
   content TEXT NOT NULL,
@@ -14,14 +33,15 @@ CREATE TABLE IF NOT EXISTS comments (
   post_id UUID NOT NULL, -- 칼럼 또는 커뮤니티 게시글 ID
   post_type post_type NOT NULL, -- 'column' 또는 'community'
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-  -- 제약 조건: post_id는 post_type에 따라 columns 또는 community_posts의 ID를 참조
-  CONSTRAINT valid_post_reference CHECK (
-    (post_type = 'column' AND EXISTS(SELECT 1 FROM columns WHERE id = post_id))
-    OR
-    (post_type = 'community' AND EXISTS(SELECT 1 FROM community_posts WHERE id = post_id))
-  )
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- 트리거 생성: 입력/수정 시 post_id 참조 확인
+DROP TRIGGER IF EXISTS check_post_reference_trigger ON comments;
+CREATE TRIGGER check_post_reference_trigger
+BEFORE INSERT OR UPDATE ON comments
+FOR EACH ROW
+EXECUTE FUNCTION check_post_reference();
 
 -- 인덱스 생성
 CREATE INDEX IF NOT EXISTS idx_comments_author ON comments(author_id);

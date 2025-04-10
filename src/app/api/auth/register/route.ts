@@ -102,6 +102,9 @@ export async function POST(req: NextRequest) {
       }, { status: 500 });
     }
 
+    // 성공적인 사용자 생성 로그
+    console.log("사용자가 성공적으로 생성되었습니다. ID:", data.id);
+
     // 민감한 정보 제거
     const { password: _, ...safeUserData } = data;
     

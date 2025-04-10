@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 export default function RegisterPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-neutral p-4">
-      <div className="w-full max-w-md space-y-8">
+      <div className="w-full max-w-md space-y-8 relative z-10">
         <div className="text-center">
           <Link href="/" className="inline-block">
             <h1 className="text-3xl font-bold text-neutral-content">Grozy</h1>
@@ -34,7 +34,7 @@ export default function RegisterPage() {
         </div>
       </div>
       
-      <div className="absolute bottom-0 left-0 right-0 h-32 bg-primary opacity-10"></div>
+      <div className="absolute bottom-0 left-0 right-0 h-32 bg-primary opacity-10 z-0"></div>
     </div>
   )
 } 
