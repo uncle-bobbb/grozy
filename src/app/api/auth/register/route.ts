@@ -7,6 +7,7 @@ import bcrypt from "bcryptjs";
 const registerSchema = z.object({
   email: z.string().email("유효한 이메일 주소를 입력해주세요."),
   password: z.string().min(6, "비밀번호는 6자 이상이어야 합니다."),
+  name: z.string().min(2, "이름은 2자 이상이어야 합니다.").max(20, "이름은 20자 이하여야 합니다."),
   nickname: z.string().min(2, "닉네임은 2자 이상이어야 합니다.").max(20, "닉네임은 20자 이하여야 합니다."),
 });
 
@@ -27,7 +28,7 @@ export async function POST(req: NextRequest) {
       }, { status: 400 });
     }
 
-    const { email, password, nickname } = validation.data;
+    const { email, password, name, nickname } = validation.data;
     
     // Supabase 클라이언트 생성
     const supabase = createServerClient();
@@ -79,14 +80,14 @@ export async function POST(req: NextRequest) {
     // 비밀번호 해싱 (salt 라운드 10으로 설정)
     const hashedPassword = await bcrypt.hash(password, 10);
     
-    // 새 사용자 저장
+    // 새 사용자 저장 - 이름과 닉네임 별도 저장
     const { data, error } = await supabase
       .from("users")
       .insert({
         email,
         password: hashedPassword, // 해싱된 비밀번호 저장
-        nickname,
-        name: nickname, // 이름이 필요한 경우 닉네임을 기본값으로 사용
+        name, // 실제 이름
+        nickname, // 닉네임
         provider: "email",
         role: "user", // 기본 역할
         status: "active", // 기본 상태
@@ -108,17 +109,17 @@ export async function POST(req: NextRequest) {
     // 민감한 정보 제거
     const { password: _, ...safeUserData } = data;
     
-    return NextResponse.json({ 
-      success: true, 
-      message: "회원가입에 성공했습니다.",
+    return NextResponse.json({
+      success: true,
+      message: "회원가입이 완료되었습니다.",
       user: safeUserData
     });
     
   } catch (error) {
-    console.error("회원가입 처리 오류:", error);
+    console.error("회원가입 처리 중 예외 발생:", error);
     return NextResponse.json({ 
       success: false, 
-      message: "회원가입 처리 중 오류가 발생했습니다." 
+      message: "서버 오류가 발생했습니다." 
     }, { status: 500 });
   }
 } 

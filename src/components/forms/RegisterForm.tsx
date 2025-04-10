@@ -9,7 +9,8 @@ import GoogleIcon from "@/components/icons/GoogleIcon";
 
 // 회원가입 유효성 검사를 위한 스키마
 const registerSchema = z.object({
-  nickname: z.string().min(2, '이름은 2자 이상이어야 합니다.').max(20, '이름은 20자 이하여야 합니다.'),
+  name: z.string().min(2, '이름은 2자 이상이어야 합니다.').max(20, '이름은 20자 이하여야 합니다.'),
+  nickname: z.string().min(2, '닉네임은 2자 이상이어야 합니다.').max(20, '닉네임은 20자 이하여야 합니다.'),
   email: z.string().email('유효한 이메일 주소를 입력해 주세요.'),
   password: z.string().min(6, '비밀번호는 최소 6자 이상이어야 합니다.'),
   confirmPassword: z.string(),
@@ -24,6 +25,7 @@ const registerSchema = z.object({
 export default function RegisterForm() {
   const router = useRouter()
   const [formData, setFormData] = useState({
+    name: '',
     nickname: '',
     email: '',
     password: '',
@@ -33,6 +35,8 @@ export default function RegisterForm() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isLoading, setIsLoading] = useState(false)
   const [registerError, setRegisterError] = useState('')
+  const [isNicknameChecked, setIsNicknameChecked] = useState(false)
+  const [isChecking, setIsChecking] = useState(false)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value, type, checked } = e.target
@@ -45,9 +49,67 @@ export default function RegisterForm() {
     }
   }
 
+  // 닉네임 중복 확인 함수
+  const checkNicknameDuplicate = async () => {
+    if (!formData.nickname || formData.nickname.length < 2) {
+      setErrors(prev => ({ ...prev, nickname: '닉네임은 2자 이상이어야 합니다.' }));
+      return;
+    }
+    
+    setIsChecking(true);
+    
+    try {
+      const response = await fetch(`/api/auth/check-nickname?nickname=${encodeURIComponent(formData.nickname)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || '닉네임 중복 확인 중 오류가 발생했습니다.');
+      }
+      
+      if (data.exists) {
+        setErrors(prev => ({ ...prev, nickname: '이미 사용 중인 닉네임입니다.' }));
+        setIsNicknameChecked(false);
+      } else {
+        setErrors(prev => {
+          const newErrors = { ...prev };
+          delete newErrors.nickname;
+          return newErrors;
+        });
+        setIsNicknameChecked(true);
+      }
+    } catch (error) {
+      if (error instanceof Error) {
+        setErrors(prev => ({ ...prev, nickname: error.message }));
+      } else {
+        setErrors(prev => ({ ...prev, nickname: '닉네임 중복 확인 중 오류가 발생했습니다.' }));
+      }
+      setIsNicknameChecked(false);
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  // 닉네임 변경 시 중복 확인 상태 리셋
+  const handleNicknameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setIsNicknameChecked(false);
+    handleChange(e);
+  };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setRegisterError('')
+    
+    // 닉네임이 변경되었거나 중복 확인이 안된 경우
+    if (!isNicknameChecked) {
+      setErrors(prev => ({ ...prev, nickname: '닉네임 중복 확인이 필요합니다.' }));
+      return;
+    }
     
     try {
       // 폼 유효성 검사
@@ -55,24 +117,46 @@ export default function RegisterForm() {
       
       setIsLoading(true)
       
-      // 회원가입 API 호출 - nickname 필드 올바르게 전송
-      const response = await fetch('/api/auth/register', {
+      // 닉네임이 중복 확인된 후 변경되었는지 재확인
+      const response = await fetch(`/api/auth/check-nickname?nickname=${encodeURIComponent(formData.nickname)}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const nicknameCheck = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(nicknameCheck.message || '닉네임 중복 확인 중 오류가 발생했습니다.');
+      }
+      
+      if (nicknameCheck.exists) {
+        setErrors(prev => ({ ...prev, nickname: '이미 사용 중인 닉네임입니다.' }));
+        setIsLoading(false);
+        setIsNicknameChecked(false);
+        return;
+      }
+      
+      // 회원가입 API 호출 - 이름과 닉네임 필드 모두 전송
+      const registerResponse = await fetch('/api/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          nickname: formData.nickname, // 닉네임 필드
+          name: formData.name,
+          nickname: formData.nickname,
           email: formData.email,
           password: formData.password,
         }),
       })
 
       // 응답 처리
-      const data = await response.json()
+      const data = await registerResponse.json()
       console.log('회원가입 응답:', data) // 디버깅용 로그
 
-      if (!response.ok) {
+      if (!registerResponse.ok) {
         throw new Error(data.message || '회원가입 중 오류가 발생했습니다.')
       }
 
@@ -114,22 +198,54 @@ export default function RegisterForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div>
+        <label htmlFor="name" className="block text-sm font-medium text-neutral-content">
+          이름
+        </label>
+        <input
+          id="name"
+          name="name"
+          type="text"
+          required
+          value={formData.name}
+          onChange={handleChange}
+          className={`mt-1 block w-full rounded-md border ${
+            errors.name ? 'border-red-500' : 'border-border'
+          } px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary`}
+          placeholder="실명을 입력하세요 (2-20자)"
+        />
+        {errors.name && <p className="mt-1 text-xs text-red-500">{errors.name}</p>}
+      </div>
+
+      <div>
         <label htmlFor="nickname" className="block text-sm font-medium text-neutral-content">
           닉네임
         </label>
-        <input
-          id="nickname"
-          name="nickname"
-          type="text"
-          required
-          value={formData.nickname}
-          onChange={handleChange}
-          className={`mt-1 block w-full rounded-md border ${
-            errors.nickname ? 'border-red-500' : 'border-border'
-          } px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary`}
-          placeholder="닉네임을 입력하세요 (2-20자)"
-        />
+        <div className="flex">
+          <input
+            id="nickname"
+            name="nickname"
+            type="text"
+            required
+            value={formData.nickname}
+            onChange={handleNicknameChange}
+            className={`mt-1 block w-full rounded-l-md border-y border-l ${
+              errors.nickname ? 'border-red-500' : 'border-border'
+            } px-3 py-2 shadow-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary`}
+            placeholder="닉네임을 입력하세요 (2-20자)"
+          />
+          <button
+            type="button"
+            onClick={checkNicknameDuplicate}
+            disabled={isChecking || isLoading || !formData.nickname || formData.nickname.length < 2}
+            className="mt-1 flex items-center justify-center whitespace-nowrap rounded-r-md border border-l-0 border-border bg-neutral px-3 py-2 text-sm font-medium text-neutral-content shadow-sm hover:bg-gray-100 focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-70"
+          >
+            {isChecking ? "확인 중" : isNicknameChecked ? "확인 완료" : "중복 확인"}
+          </button>
+        </div>
         {errors.nickname && <p className="mt-1 text-xs text-red-500">{errors.nickname}</p>}
+        {isNicknameChecked && !errors.nickname && (
+          <p className="mt-1 text-xs text-green-500">사용 가능한 닉네임입니다.</p>
+        )}
       </div>
 
       <div>
