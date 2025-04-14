@@ -19,22 +19,33 @@ const columnFormSchema = z.object({
   thumbnailUrl: z.string().optional(),
 });
 
+type ColumnFormValues = z.infer<typeof columnFormSchema>;
+
 export default function WriteColumnPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [error, setError] = useState<string>("");
-  
-  // 전문가 권한 체크
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 로딩 중 또는 인증되지 않은 상태 처리
   if (status === "loading") {
-    return <div>로딩중...</div>;
+    return <div className="text-center py-10">로딩 중...</div>;
   }
 
-  if (!session || session.user.role !== "expert") {
-    router.push("/login");
+  // 권한 검사 (전문가나 관리자만 접근 가능)
+  if (status === "unauthenticated" || !session?.user) {
+    router.push("/login?callbackUrl=/column/write");
     return null;
   }
 
-  const form = useForm<z.infer<typeof columnFormSchema>>({
+  // 권한 검사 (전문가나 관리자만 접근 가능)
+  if (session.user.role !== "expert" && session.user.role !== "admin") {
+    router.push("/column");
+    return null;
+  }
+
+  // 폼 초기화
+  const form = useForm<ColumnFormValues>({
     resolver: zodResolver(columnFormSchema),
     defaultValues: {
       title: "",
@@ -43,23 +54,56 @@ export default function WriteColumnPage() {
     },
   });
 
-  const onSubmit = async (values: z.infer<typeof columnFormSchema>) => {
+  // 폼 제출 처리
+  const onSubmit = async (values: ColumnFormValues) => {
+    setIsSubmitting(true);
+    setError(null);
+
     try {
       const response = await fetch("/api/columns", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          title: values.title,
+          content: values.content,
+          image_url: values.thumbnailUrl || null,
+        }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error("칼럼 등록에 실패했습니다");
+        throw new Error(data.error || "칼럼 작성 중 오류가 발생했습니다.");
       }
 
-      router.push("/column");
+      router.push(`/column/${data.column.id}`);
     } catch (err) {
-      setError("일시적인 오류가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+      setError(err instanceof Error ? err.message : "칼럼 작성 중 오류가 발생했습니다.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // 에디터에서 이미지 URL 추출 (첫 번째 이미지를 썸네일로 사용)
+  const extractFirstImageUrl = (content: string) => {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(content, "text/html");
+    const imgTag = doc.querySelector("img");
+    return imgTag?.getAttribute("src") || "";
+  };
+
+  // 내용이 변경될 때 첫 번째 이미지를 썸네일로 설정
+  const handleContentChange = (content: string) => {
+    form.setValue("content", content);
+    
+    // 썸네일 URL이 아직 없는 경우, 첫 번째 이미지를 썸네일로 설정
+    if (!form.getValues("thumbnailUrl")) {
+      const thumbnailUrl = extractFirstImageUrl(content);
+      if (thumbnailUrl) {
+        form.setValue("thumbnailUrl", thumbnailUrl);
+      }
     }
   };
 
@@ -98,7 +142,24 @@ export default function WriteColumnPage() {
                 <FormControl>
                   <TiptapEditor 
                     content={field.value} 
-                    onChange={field.onChange}
+                    onChange={handleContentChange}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="thumbnailUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>썸네일 이미지 URL (선택)</FormLabel>
+                <FormControl>
+                  <Input 
+                    placeholder="썸네일로 사용할 이미지 URL을 입력하세요" 
+                    {...field} 
                   />
                 </FormControl>
                 <FormMessage />
@@ -114,7 +175,9 @@ export default function WriteColumnPage() {
             >
               취소
             </Button>
-            <Button type="submit">등록</Button>
+            <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting ? "처리 중..." : "등록"}
+            </Button>
           </div>
         </form>
       </Form>

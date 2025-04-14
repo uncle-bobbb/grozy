@@ -54,6 +54,7 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
   const [likeCount, setLikeCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteAlert, setShowDeleteAlert] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
     // 로그인 체크
@@ -195,7 +196,7 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
             <Button 
               variant="outline" 
               className="flex items-center gap-2 text-red-500 border-red-200 hover:bg-red-50"
-              onClick={() => setShowDeleteAlert(true)}
+              onClick={() => setDeleteDialogOpen(true)}
             >
               <Trash2 className="h-4 w-4" />
               <span>삭제</span>
@@ -281,19 +282,25 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
       />
 
       {/* 삭제 확인 대화상자 */}
-      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
-        <AlertDialogContent>
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="bg-white dark:bg-gray-800">
           <AlertDialogHeader>
-            <AlertDialogTitle>칼럼 삭제 확인</AlertDialogTitle>
-            <AlertDialogDescription>
+            <AlertDialogTitle className="text-gray-900 dark:text-gray-100 text-xl font-bold">
+              칼럼 삭제 확인
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-gray-700 dark:text-gray-300">
               이 칼럼을 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogCancel
+              className="bg-gray-200 text-gray-800 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-200 dark:hover:bg-gray-600"
+            >
+              취소
+            </AlertDialogCancel>
+            <AlertDialogAction
               onClick={handleDelete}
-              className="bg-red-500 hover:bg-red-600 text-white"
+              className="bg-red-500 text-white hover:bg-red-600 dark:bg-red-600 dark:hover:bg-red-700"
             >
               삭제
             </AlertDialogAction>

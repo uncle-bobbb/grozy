@@ -1,17 +1,21 @@
 /** @type {import('next').NextConfig} */
+const supabaseHost = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+  : 'qqsoqjnijhhkqmbgvfbp.supabase.co'; // 기본값
+
 const nextConfig = {
   // ... existing config ...
   images: {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'search.pstatic.net',
+        hostname: 'picsum.photos',
         pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'picsum.photos',
-        pathname: '/**',
+        hostname: supabaseHost,
+        pathname: '/storage/v1/object/public/**',
       },
     ],
   },
