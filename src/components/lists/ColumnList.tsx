@@ -1,106 +1,99 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
-
-// 임시 데이터
-const columns = [
-  {
-    id: 1,
-    title: "아이의 창의력을 키워주는 방법",
-    summary: "창의력은 미래 사회에서 가장 중요한 능력 중 하나입니다. 이 글에서는 일상에서 아이의 창의력을 키워주는 방법에 대해 알아봅니다.",
-    author: "김창의 교육전문가",
-    date: "2025-01-15",
-    thumbnail: "https://picsum.photos/seed/column1/600/400",
-    likes: 42,
-    comments: 8
-  },
-  {
-    id: 2,
-    title: "영유아기 언어발달 촉진하는 놀이 방법",
-    summary: "언어 발달은 영유아기에 가장 중요한 발달 과업입니다. 이 글에서는 놀이를 통해 언어 발달을 촉진할 수 있는 방법을 소개합니다.",
-    author: "이언어 언어치료사",
-    date: "2025-01-14",
-    thumbnail: "https://picsum.photos/seed/column2/600/400",
-    likes: 38,
-    comments: 12
-  },
-  {
-    id: 3,
-    title: "아이와 함께하는 건강한 식습관 형성",
-    summary: "올바른 식습관은 어린 시절부터 형성됩니다. 이 글에서는 부모가 아이와 함께 건강한 식습관을 형성하는 방법에 대해 다룹니다.",
-    author: "박영양 영양학전문가",
-    date: "2025-01-13",
-    thumbnail: "https://picsum.photos/seed/column3/600/400",
-    likes: 56,
-    comments: 15
-  },
-  {
-    id: 4,
-    title: "양육 스트레스 관리와 자기 돌봄의 중요성",
-    summary: "부모의 정신 건강은 아이의 건강한 성장에 큰 영향을 미칩니다. 이 글에서는 양육 스트레스를 관리하는 방법을 알아봅니다.",
-    author: "최마음 심리상담사",
-    date: "2025-01-12",
-    thumbnail: "https://picsum.photos/seed/column4/600/400",
-    likes: 62,
-    comments: 21
-  }
-];
+import { format } from "date-fns";
+import { ko } from "date-fns/locale";
+import { Heart, MessageSquare, Eye } from "lucide-react";
+import { ColumnModel } from "@/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 
 interface ColumnListProps {
+  columns?: ColumnModel[];
   limit?: number;
-  title?: string;
 }
 
-export default function ColumnList({ limit = 4, title = "전문가들이 전하는 육아 칼럼" }: ColumnListProps) {
+export default function ColumnList({ columns = [], limit }: ColumnListProps) {
+  // 칼럼 수 제한 적용
+  const displayColumns = limit ? columns.slice(0, limit) : columns;
+
+  // 칼럼이 없는 경우를 위한 UI 추가
+  if (columns.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-500">
+        <p>아직 등록된 칼럼이 없습니다.</p>
+      </div>
+    );
+  }
+
   return (
-    <section className="py-12">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="text-center mb-12">
-          <h2 className="text-2xl sm:text-3xl font-bold text-neutral-content">{title}</h2>
-          <p className="mt-2 text-neutral-content">과학적이고 전문적인 육아 정보를 만나보세요</p>
-        </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {columns.slice(0, limit).map((column) => (
-            <div key={column.id} className="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-md transition-shadow border border-border">
-              <Link href={`/column/${column.id}`}>
-                <div className="relative h-48 w-full">
-                  <Image 
-                    src={column.thumbnail}
-                    alt={column.title}
-                    fill
-                    style={{ objectFit: 'cover' }}
-                    className="transition-transform hover:scale-105 duration-300"
-                  />
-                </div>
-                <div className="p-4">
-                  <h3 className="font-semibold text-lg text-neutral-content mb-2 line-clamp-2">
-                    {column.title}
-                  </h3>
-                  <p className="text-sm text-neutral-content mb-3 line-clamp-3">
-                    {column.summary}
-                  </p>
-                  <div className="flex justify-between items-center text-xs text-neutral-content">
-                    <span>{column.author}</span>
-                    <div className="flex space-x-2">
-                      <span>❤ {column.likes}</span>
-                      <span>💬 {column.comments}</span>
-                    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {displayColumns.map((column) => (
+        <Link 
+          key={column.id} 
+          href={`/column/${column.id}`}
+          className="group"
+        >
+          <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 transition-all duration-300 hover:shadow-lg hover:border-primary/20">
+            {/* 썸네일 이미지 */}
+            <div className="relative h-48 w-full overflow-hidden">
+              <Image
+                src={column.image_url || "https://picsum.photos/seed/column/600/400"}
+                alt={column.title}
+                fill
+                className="object-cover transition-transform duration-300 group-hover:scale-105"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+              />
+            </div>
+            
+            {/* 내용 컨테이너 */}
+            <div className="p-4">
+              {/* 제목 */}
+              <h3 className="text-lg font-semibold line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                {column.title}
+              </h3>
+              
+              {/* 작성자 정보 */}
+              <div className="flex items-center gap-2 mb-3">
+                <Avatar className="h-6 w-6">
+                  <AvatarImage src={column.users?.image} alt={column.users?.name || "작성자"} />
+                  <AvatarFallback>
+                    {column.users?.name?.charAt(0) || "U"}
+                  </AvatarFallback>
+                </Avatar>
+                <span className="text-sm text-gray-600">{column.users?.name || "전문가"}</span>
+                {column.users?.expertise && (
+                  <Badge variant="outline" className="ml-1 text-xs">
+                    {column.users.expertise}
+                  </Badge>
+                )}
+              </div>
+              
+              {/* 날짜 및 통계 */}
+              <div className="flex items-center justify-between text-sm text-gray-500">
+                <span>
+                  {format(new Date(column.created_at), "yyyy.MM.dd", { locale: ko })}
+                </span>
+                <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-1">
+                    <Eye className="h-4 w-4" />
+                    <span>{column.view_count}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Heart className="h-4 w-4" />
+                    <span>{column.like_count}</span>
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <MessageSquare className="h-4 w-4" />
+                    <span>{column.comment_count}</span>
                   </div>
                 </div>
-              </Link>
+              </div>
             </div>
-          ))}
-        </div>
-        
-        <div className="text-center mt-8">
-          <Link
-            href="/column"
-            className="inline-flex items-center px-4 py-2 border border-primary rounded-md bg-white text-neutral-content hover:bg-neutral transition-colors"
-          >
-            더 많은 칼럼 보기
-          </Link>
-        </div>
-      </div>
-    </section>
+          </div>
+        </Link>
+      ))}
+    </div>
   );
 } 

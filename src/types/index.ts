@@ -79,18 +79,24 @@ export interface UserModel {
   updated_at: string;
 }
 
-// 칼럼 게시글 타입
+// 칼럼 모델 타입
 export interface ColumnModel {
   id: string;
   title: string;
   content: string;
-  image_url?: string | null;
+  image_url: string | null;
   author_id: string;
   view_count: number;
   like_count: number;
   comment_count: number;
   created_at: string;
   updated_at: string;
+  users?: {
+    id: string;
+    name: string;
+    image: string;
+    role: string;
+  };
 }
 
 // 커뮤니티 게시글 타입
@@ -112,10 +118,16 @@ export interface CommentModel {
   id: string;
   content: string;
   author_id: string;
-  post_id: string; // 칼럼/커뮤니티 게시글 ID
-  post_type: "column" | "community"; // 게시글 타입 구분
+  post_id: string;
+  post_type: "column" | "community";
   created_at: string;
   updated_at: string;
+  author?: {
+    id: string;
+    name: string;
+    image: string;
+    role: string;
+  };
 }
 
 // 좋아요 타입
@@ -136,4 +148,51 @@ export interface NoticeModel {
   view_count: number;
   created_at: string;
   updated_at: string;
-} 
+}
+
+// Supabase 데이터베이스 타입 정의
+export interface Database {
+  public: {
+    Tables: {
+      columns: {
+        Row: {
+          id: string;
+          title: string;
+          content: string;
+          image_url: string | null;
+          author_id: string;
+          view_count: number;
+          like_count: number;
+          comment_count: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          title: string;
+          content: string;
+          image_url?: string | null;
+          author_id: string;
+          view_count?: number;
+          like_count?: number;
+          comment_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          title?: string;
+          content?: string;
+          image_url?: string | null;
+          author_id?: string;
+          view_count?: number;
+          like_count?: number;
+          comment_count?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
+      // 다른 테이블들...
+    };
+  };
+}

@@ -1,7 +1,8 @@
 import "server-only";
 
 import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
+import { cache } from "react";
+import { Database } from "@/types/index";
 
 // 서버 컴포넌트에서 사용할 Supabase 클라이언트
 export function createServerClient(
@@ -44,3 +45,13 @@ export async function createPureClient() {
     }
   );
 }
+
+// API 라우트에서 사용할 Supabase 클라이언트
+export const createServiceClient = cache(() => {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+
+  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+    auth: { persistSession: false }
+  });
+});
