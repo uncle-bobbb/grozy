@@ -65,22 +65,18 @@ export async function DELETE(
       );
     }
     
-    // 게시글 댓글 수 감소
+    // 최신 댓글 수 가져오기
     const tableName = comment.post_type === "column" ? "columns" : "community_posts";
-    
-    const { error: updateError } = await supabase.rpc("decrement_comment_count", {
-      p_table_name: tableName,
-      p_id: comment.post_id
-    });
-    
-    if (updateError) {
-      console.error("댓글 수 업데이트 오류:", updateError);
-      // 댓글은 삭제됐으므로 오류를 반환하지 않고 로그만 남김
-    }
+    const { data: post } = await supabase
+      .from(tableName)
+      .select("comment_count")
+      .eq("id", comment.post_id)
+      .single();
     
     return NextResponse.json({
       success: true,
-      message: "댓글이 성공적으로 삭제되었습니다."
+      message: "댓글이 성공적으로 삭제되었습니다.",
+      commentCount: post?.comment_count || 0
     });
     
   } catch (error) {

@@ -36,7 +36,10 @@ export default function CommentSection({ postId, postType, commentCount }: Comme
         }
         
         const data = await response.json();
-        setComments(data.comments);
+        console.log("API 응답 데이터:", data); // 디버깅용 로그
+        
+        // API가 배열을 직접 반환하므로 data 자체가 댓글 배열임
+        setComments(data || []);
       } catch (error) {
         console.error("댓글을 불러오는 중 오류가 발생했습니다:", error);
       } finally {
@@ -70,8 +73,9 @@ export default function CommentSection({ postId, postType, commentCount }: Comme
       
       const data = await response.json();
       
-      // 댓글 목록 업데이트
-      setComments((prevComments) => [data.comment, ...prevComments]);
+      // 댓글 목록 업데이트 - 오류 수정: 가장 아래에 추가해야 함
+      const newCommentData = data.comment || data;
+      setComments((prevComments) => [...prevComments, newCommentData]);
       setNewComment("");
     } catch (error) {
       console.error("댓글 작성 중 오류가 발생했습니다:", error);
@@ -106,7 +110,7 @@ export default function CommentSection({ postId, postType, commentCount }: Comme
 
   return (
     <section className="mb-16">
-      <h2 className="text-xl font-bold mb-6">댓글 {commentCount}</h2>
+      <h2 className="text-xl font-bold mb-6">댓글 {comments.length}</h2>
       
       {/* 댓글 작성 영역 */}
       {session && (

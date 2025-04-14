@@ -96,6 +96,7 @@ export interface ColumnModel {
     name: string;
     image: string;
     role: string;
+    expertise: string;
   };
 }
 

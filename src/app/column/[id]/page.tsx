@@ -17,8 +17,8 @@ export async function generateMetadata({ params }: ColumnDetailPageProps): Promi
 }
 
 export default async function ColumnDetailPage({ params }: { params: { id: string } }) {
-  // await 제거 - params는 이미 객체임
-  const { id } = params;
+  // params를 await 처리
+  const { id } = await params;
   
   return (
     <main className="container mx-auto px-4 py-8">

@@ -11,7 +11,8 @@ export async function GET(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    // params를 await 처리
+    const { id } = await params;
     const session = await getServerSession(authOptions);
     const userId = session?.user?.id;
     
@@ -92,7 +93,8 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = params;
+    // params를 await 처리
+    const { id } = await params;
     
     // 세션 가져오기
     const session = await getServerSession(authOptions);

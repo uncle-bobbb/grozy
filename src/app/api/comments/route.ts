@@ -126,23 +126,18 @@ export async function POST(request: NextRequest) {
       );
     }
     
-    // 게시글 댓글 수 증가
+    // 최신 댓글 수 가져오기
     const tableName = data.postType === "column" ? "columns" : "community_posts";
-    
-    // RPC 함수를 이용하여 댓글 수 증가
-    const { error: updateError } = await supabase.rpc("increment_comment_count", {
-      p_table_name: tableName,
-      p_id: data.postId
-    });
-    
-    if (updateError) {
-      console.error("댓글 수 업데이트 오류:", updateError);
-      // 댓글은 추가됐으므로 오류를 반환하지 않고 로그만 남김
-    }
+    const { data: post } = await supabase
+      .from(tableName)
+      .select("comment_count")
+      .eq("id", data.postId)
+      .single();
     
     return NextResponse.json({
       success: true,
-      comment: newComment
+      comment: newComment,
+      commentCount: post?.comment_count || 0
     });
     
   } catch (error) {

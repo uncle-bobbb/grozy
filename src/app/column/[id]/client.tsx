@@ -6,11 +6,21 @@ import { useSession } from "next-auth/react";
 import Image from "next/image";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Heart, User, MessageSquare, ArrowLeft, Loader2 } from "lucide-react";
+import { Heart, User, MessageSquare, ArrowLeft, Loader2, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import CommentSection from "@/components/common/CommentSection";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface ColumnDetailClientProps {
   columnId: string;
@@ -43,6 +53,7 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
+  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
 
   useEffect(() => {
     // 로그인 체크
@@ -113,6 +124,37 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
     router.back();
   };
 
+  // 작성자 또는 관리자인지 확인하는 함수
+  const isAuthorOrAdmin = () => {
+    if (!session || !column) return false;
+    return session.user.id === column.users.id || session.user.role === "admin";
+  };
+  
+  // 수정 페이지로 이동
+  const handleEdit = () => {
+    router.push(`/column/edit/${columnId}`);
+  };
+  
+  // 칼럼 삭제 처리
+  const handleDelete = async () => {
+    try {
+      const response = await fetch(`/api/columns/${columnId}`, {
+        method: "DELETE",
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || "칼럼 삭제에 실패했습니다.");
+      }
+      
+      // 삭제 성공 시 칼럼 목록 페이지로 이동
+      router.push("/column");
+    } catch (error: any) {
+      console.error("칼럼 삭제 중 오류가 발생했습니다:", error);
+      alert(error.message || "칼럼 삭제 중 오류가 발생했습니다.");
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-20 flex justify-center items-center">
@@ -133,11 +175,33 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
   return (
     <article className="max-w-4xl mx-auto">
       {/* 상단 네비게이션 */}
-      <div className="mb-8">
+      <div className="mb-8 flex justify-between">
         <Button variant="ghost" onClick={handleGoBack} className="flex items-center gap-2">
           <ArrowLeft className="h-4 w-4" />
           <span>돌아가기</span>
         </Button>
+        
+        {/* 수정/삭제 버튼 (작성자나 관리자만 표시) */}
+        {isAuthorOrAdmin() && (
+          <div className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={handleEdit} 
+              className="flex items-center gap-2"
+            >
+              <Edit className="h-4 w-4" />
+              <span>수정</span>
+            </Button>
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2 text-red-500 border-red-200 hover:bg-red-50"
+              onClick={() => setShowDeleteAlert(true)}
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>삭제</span>
+            </Button>
+          </div>
+        )}
       </div>
 
       <section className="mb-8">
@@ -169,9 +233,6 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
           <div className="flex flex-wrap gap-4 text-sm text-gray-500">
             <div>작성일: {format(new Date(column.created_at), 'yyyy년 MM월 dd일', { locale: ko })}</div>
             <div>조회 {column.view_count}회</div>
-            <div className="flex items-center">
-              <MessageSquare className="h-4 w-4 mr-1" /> {column.comment_count}
-            </div>
           </div>
         </div>
 
@@ -218,6 +279,27 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
         postType="column"
         commentCount={column.comment_count}
       />
+
+      {/* 삭제 확인 대화상자 */}
+      <AlertDialog open={showDeleteAlert} onOpenChange={setShowDeleteAlert}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>칼럼 삭제 확인</AlertDialogTitle>
+            <AlertDialogDescription>
+              이 칼럼을 정말 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDelete}
+              className="bg-red-500 hover:bg-red-600 text-white"
+            >
+              삭제
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </article>
   );
 } 
