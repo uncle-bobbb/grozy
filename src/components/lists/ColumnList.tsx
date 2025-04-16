@@ -18,6 +18,9 @@ export default function ColumnList({ columns = [], limit }: ColumnListProps) {
   // 칼럼 수 제한 적용
   const displayColumns = limit ? columns.slice(0, limit) : columns;
 
+  // 기본 썸네일 이미지 경로 (public 폴더 내 이미지로 가정)
+  const defaultThumbnail = "/grozy-default-thumbnail.png";
+
   // 칼럼이 없는 경우를 위한 UI 추가
   if (columns.length === 0) {
     return (
@@ -28,18 +31,18 @@ export default function ColumnList({ columns = [], limit }: ColumnListProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
       {displayColumns.map((column) => (
         <Link 
           key={column.id} 
           href={`/column/${column.id}`}
           className="group"
         >
-          <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 transition-all duration-300 hover:shadow-lg hover:border-primary/20">
+          <div className="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200 transition-all duration-300 hover:shadow-lg hover:border-primary/20 h-full flex flex-col">
             {/* 썸네일 이미지 */}
             <div className="relative h-48 w-full overflow-hidden">
               <Image
-                src={column.image_url || "https://picsum.photos/seed/column/600/400"}
+                src={column.image_url || defaultThumbnail}
                 alt={column.title}
                 fill
                 className="object-cover transition-transform duration-300 group-hover:scale-105"
@@ -48,7 +51,7 @@ export default function ColumnList({ columns = [], limit }: ColumnListProps) {
             </div>
             
             {/* 내용 컨테이너 */}
-            <div className="p-4">
+            <div className="p-4 flex flex-col flex-grow">
               {/* 제목 */}
               <h3 className="text-lg font-semibold line-clamp-2 mb-2 group-hover:text-primary transition-colors">
                 {column.title}
@@ -70,8 +73,8 @@ export default function ColumnList({ columns = [], limit }: ColumnListProps) {
                 )}
               </div>
               
-              {/* 날짜 및 통계 */}
-              <div className="flex items-center justify-between text-sm text-gray-500">
+              {/* 날짜 및 통계 - 하단에 고정되도록 margin-top: auto 추가 */}
+              <div className="flex items-center justify-between text-sm text-gray-500 mt-auto">
                 <span>
                   {format(new Date(column.created_at), "yyyy.MM.dd", { locale: ko })}
                 </span>

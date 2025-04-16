@@ -9,6 +9,8 @@ import Link from "next/link";
 import NoticeBanner from "@/components/common/NoticeBanner";
 import ColumnList from "@/components/lists/ColumnList";
 import CommunityList from "@/components/lists/CommunityList";
+import { ColumnModel } from "@/types";
+import { Loader2 } from "lucide-react";
 
 const PACKAGE_NAME = '@easynext/cli';
 const CURRENT_VERSION = 'v0.1.35';
@@ -22,6 +24,9 @@ function latestVersion(packageName: string) {
 export default function Home() {
   const { toast } = useToast();
   const [latest, setLatest] = useState<string | null>(null);
+  const [recentColumns, setRecentColumns] = useState<ColumnModel[]>([]);
+  const [isLoadingColumns, setIsLoadingColumns] = useState(true);
+  const [columnError, setColumnError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchLatestVersion = async () => {
@@ -33,6 +38,28 @@ export default function Home() {
       }
     };
     fetchLatestVersion();
+    
+    // 최신 칼럼 데이터 가져오기
+    const fetchRecentColumns = async () => {
+      try {
+        setIsLoadingColumns(true);
+        const response = await fetch('/api/columns?page=1&limit=6');
+        
+        if (!response.ok) {
+          throw new Error('칼럼을 불러오는데 실패했습니다.');
+        }
+        
+        const data = await response.json();
+        setRecentColumns(data.columns || []);
+      } catch (error) {
+        console.error('칼럼 데이터 불러오기 오류:', error);
+        setColumnError('최신 칼럼을 불러오지 못했습니다.');
+      } finally {
+        setIsLoadingColumns(false);
+      }
+    };
+    
+    fetchRecentColumns();
   }, []);
 
   const handleCopyCommand = () => {
@@ -86,7 +113,32 @@ export default function Home() {
       <NoticeBanner />
 
       {/* 최신 칼럼 섹션 */}
-      <ColumnList />
+      <section className="py-12 bg-neutral">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <h2 className="text-2xl sm:text-3xl font-bold text-center mb-8">전문가들이 전하는 육아 칼럼</h2>
+          
+          {isLoadingColumns ? (
+            <div className="flex justify-center items-center min-h-[200px]">
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            </div>
+          ) : columnError ? (
+            <div className="text-center py-12 text-gray-500">
+              <p>{columnError}</p>
+            </div>
+          ) : (
+            <ColumnList columns={recentColumns} limit={6} />
+          )}
+          
+          <div className="text-center mt-8">
+            <Link
+              href="/column"
+              className="inline-flex items-center px-4 py-2 border border-primary rounded-md bg-white text-neutral-content hover:bg-neutral transition-colors"
+            >
+              모든 칼럼 보기
+            </Link>
+          </div>
+        </div>
+      </section>
 
       {/* 인기 게시글 섹션 */}
       <CommunityList />

@@ -37,6 +37,12 @@ export default function TiptapEditor({ content, onChange }: TiptapEditorProps) {
     onUpdate: ({ editor }) => {
       onChange(editor.getHTML());
     },
+    editorProps: {
+      attributes: {
+        class: 'prose prose-neutral focus:outline-none',
+      },
+    },
+    immediatelyRender: false,
   });
 
   if (!editor) {

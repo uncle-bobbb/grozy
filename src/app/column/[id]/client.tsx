@@ -3,10 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import Image from "next/image";
 import { format } from "date-fns";
 import { ko } from "date-fns/locale";
-import { Heart, User, MessageSquare, ArrowLeft, Loader2, Edit, Trash2 } from "lucide-react";
+import { Heart, User, ArrowLeft, Loader2, Edit, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -53,7 +52,6 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
   const [isLiked, setIsLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [showDeleteAlert, setShowDeleteAlert] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 
   useEffect(() => {
@@ -122,7 +120,7 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
   };
 
   const handleGoBack = () => {
-    router.back();
+    router.push("/column");
   };
 
   // 작성자 또는 관리자인지 확인하는 함수
@@ -236,19 +234,6 @@ export default function ColumnDetailClient({ columnId }: ColumnDetailClientProps
             <div>조회 {column.view_count}회</div>
           </div>
         </div>
-
-        {/* 썸네일 이미지 */}
-        {column.image_url && (
-          <div className="relative w-full h-64 md:h-96 mb-8 rounded-lg overflow-hidden">
-            <Image 
-              src={column.image_url}
-              alt={column.title}
-              fill
-              style={{ objectFit: "cover" }}
-              priority
-            />
-          </div>
-        )}
       </section>
 
       {/* 칼럼 내용 */}
