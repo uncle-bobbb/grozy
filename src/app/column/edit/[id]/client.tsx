@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { useForm } from "react-hook-form";
@@ -110,8 +110,9 @@ export default function EditColumnClient({ initialColumn }: EditColumnClientProp
           <ArrowLeft className="h-4 w-4 mr-1" />
           뒤로
         </Button>
-        <h1 className="text-2xl font-bold">칼럼 수정</h1>
       </div>
+        
+      <h1 className="text-2xl font-bold mb-6">칼럼 수정</h1>
 
       {error && (
         <Alert variant="destructive" className="mb-6">

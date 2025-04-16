@@ -7,7 +7,8 @@ import { ColumnModel } from "@/types";
 import { Button } from "@/components/ui/button";
 import { Pagination } from "@/components/ui/pagination";
 import ColumnList from "@/components/lists/ColumnList";
-import { Loader2, PenSquare } from "lucide-react";
+import { Loader2, PenSquare, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 
 export default function ColumnListClient() {
   const { data: session } = useSession();
@@ -16,6 +17,8 @@ export default function ColumnListClient() {
   
   // 현재 페이지 번호
   const currentPage = parseInt(searchParams.get("page") || "1", 10);
+  // 검색어 파라미터 추가
+  const searchQuery = searchParams.get("q") || "";
   
   const [columns, setColumns] = useState<ColumnModel[]>([]);
   const [loading, setLoading] = useState(true);
@@ -26,6 +29,9 @@ export default function ColumnListClient() {
     totalItems: 0,
     totalPages: 0,
   });
+  
+  // 검색어 상태 추가
+  const [searchInput, setSearchInput] = useState(searchQuery);
   
   // 정렬 상태
   const [sortBy, setSortBy] = useState("created_at");
@@ -87,8 +93,12 @@ export default function ColumnListClient() {
         params.set("limit", currentLimit.toString());
         params.set("sort", sortBy);
         params.set("order", orderBy);
+        // 검색어 파라미터 추가
+        if (searchQuery) {
+          params.set("q", searchQuery);
+        }
         
-        console.log(`페이지 크기: ${currentLimit}, 페이지: ${currentPage}`); // 디버깅용
+        console.log(`페이지 크기: ${currentLimit}, 페이지: ${currentPage}, 검색어: ${searchQuery}`); // 디버깅용
         
         const response = await fetch(`/api/columns?${params.toString()}`);
         
@@ -114,7 +124,7 @@ export default function ColumnListClient() {
     };
     
     fetchColumns();
-  }, [currentPage, sortBy, orderBy, screenWidth]);
+  }, [currentPage, screenWidth, sortBy, orderBy, searchQuery]);
   
   const handlePageChange = (page: number) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -127,6 +137,32 @@ export default function ColumnListClient() {
   };
   
   const isExpertOrAdmin = session?.user?.role === "expert" || session?.user?.role === "admin";
+  
+  // 검색 함수 추가
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // 검색어가 있을 때만 처리
+    if (searchInput.trim()) {
+      // 새 URL 파라미터 구성 (페이지는 검색 시 1로 리셋)
+      const params = new URLSearchParams();
+      params.set("q", searchInput.trim());
+      params.set("page", "1");
+      params.set("sort", sortBy);
+      params.set("order", orderBy);
+      
+      // URL 업데이트로 페이지 이동 트리거
+      router.push(`/column?${params.toString()}`);
+    } else {
+      // 검색어가 비어있으면 검색 파라미터 제거
+      const params = new URLSearchParams();
+      params.set("page", "1");
+      params.set("sort", sortBy);
+      params.set("order", orderBy);
+      
+      router.push(`/column?${params.toString()}`);
+    }
+  };
   
   if (loading) {
     return (
@@ -155,20 +191,70 @@ export default function ColumnListClient() {
   
   return (
     <div>
-      {/* 상단 작성 버튼 */}
-      <div className="flex justify-end mb-6">
+      {/* 상단 작성 버튼과 검색 영역 */}
+      <div className="flex flex-col sm:flex-row justify-between gap-4 mb-6">
+        {/* 검색 폼 추가 - 스타일 수정 */}
+        <form onSubmit={handleSearch} className="flex w-full sm:w-auto">
+          <div className="relative flex-grow">
+            <Input
+              type="text"
+              placeholder="제목, 내용으로 검색"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="pl-4 pr-12 py-2 rounded-md focus:ring-primary focus:border-primary"
+            />
+            <Button 
+              type="submit" 
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-8 w-8 p-0"
+              variant="ghost"
+              size="icon"
+            >
+              <Search className="h-4 w-4" />
+            </Button>
+          </div>
+        </form>
         {isExpertOrAdmin && (
-          <Button onClick={handleWriteClick} className="gap-2">
+          <Button onClick={handleWriteClick} className="gap-2 w-full sm:w-auto">
             <PenSquare className="h-4 w-4" />
             칼럼 작성
           </Button>
         )}
       </div>
       
+      {/* 검색 결과 정보 추가 */}
+      {searchQuery && (
+        <div className="mb-4 text-neutral-content">
+          <p>
+            <span className="font-bold">"{searchQuery}"</span>에 대한 검색 결과 
+            {pagination.totalItems > 0 ? ` (${pagination.totalItems}개)` : ''}
+          </p>
+        </div>
+      )}
+      
       {/* 칼럼 목록 */}
-      {columns.length === 0 ? (
+      {loading ? (
+        <div className="flex justify-center items-center py-20">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : columns.length === 0 ? (
         <div className="text-center py-12 text-gray-500">
-          <p>아직 등록된 칼럼이 없습니다.</p>
+          {searchQuery ? (
+            <div>
+              <p>검색 결과가 없습니다.</p>
+              <Button 
+                variant="link" 
+                onClick={() => {
+                  setSearchInput("");
+                  router.push("/column");
+                }}
+                className="mt-2"
+              >
+                전체 칼럼 보기
+              </Button>
+            </div>
+          ) : (
+            <p>아직 등록된 칼럼이 없습니다.</p>
+          )}
         </div>
       ) : (
         <ColumnList columns={columns} />
